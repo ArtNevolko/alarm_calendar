@@ -1,0 +1,4 @@
+// Create assets directories
+mkdir -p assets/sounds
+mkdir -p assets/images
+mkdir -p assets/animations
