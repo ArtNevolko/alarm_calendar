@@ -5,11 +5,25 @@ import 'bloc/premium/premium_bloc.dart';
 import 'core/localization/app_localizations.dart';
 import 'presentation/screens/home/home_screen.dart';
 import 'services/notification_service.dart';
+import 'package:flutter/services.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await NotificationService.instance.init(); // уже есть ensurePermissions внутри
   runApp(const MyApp());
+
+  // Обработка запуска FullScreenActivity с параметрами через MethodChannel
+  final MethodChannel channel = MethodChannel('alarm_calendar/fullscreen');
+  channel.setMethodCallHandler((call) async {
+    if (call.method == 'onAlarmData') {
+      final alarmId = call.arguments['alarmId'] as String?;
+      final ringtoneId = call.arguments['ringtoneId'] as String?;
+      if (alarmId != null) {
+        NotificationService.instance.showAlarmPopup(alarmId: alarmId, ringtoneId: ringtoneId);
+      }
+    }
+    return null;
+  });
 }
 
 class MyApp extends StatelessWidget {

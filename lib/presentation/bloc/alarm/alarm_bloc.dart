@@ -1,4 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // События для работы с будильниками
 abstract class AlarmEvent {}
@@ -37,6 +39,23 @@ class ToggleAlarmEvent extends AlarmEvent {
 
 // Модель данных будильника
 class AlarmModel {
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'time': time,
+    'label': label,
+    'dates': dates.map((d) => d.toIso8601String()).toList(),
+    'ringtone': ringtone,
+    'enabled': enabled,
+  };
+
+  factory AlarmModel.fromJson(Map<String, dynamic> json) => AlarmModel(
+    id: json['id'] as String,
+    time: json['time'] as String,
+    label: json['label'] as String?,
+    dates: (json['dates'] as List<dynamic>).map((e) => DateTime.parse(e as String)).toList(),
+    ringtone: json['ringtone'] as String,
+    enabled: json['enabled'] as bool? ?? true,
+  );
   final String id;
   final String time;
   final String? label;
@@ -95,8 +114,26 @@ class AlarmState {
 
 // BLoC для управления будильниками
 class AlarmBloc extends Bloc<AlarmEvent, AlarmState> {
-  // Список будильников хранится в памяти для примера
+  // Список будильников хранится в памяти и синхронизируется с shared_preferences
   final List<AlarmModel> _alarms = [];
+
+  static const _prefsKey = 'alarms';
+
+  Future<void> _saveAlarms() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonList = _alarms.map((a) => a.toJson()).toList();
+    prefs.setString(_prefsKey, json.encode(jsonList));
+  }
+
+  Future<void> _loadAlarms() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonStr = prefs.getString(_prefsKey);
+    if (jsonStr != null) {
+      final List<dynamic> jsonList = json.decode(jsonStr);
+      _alarms.clear();
+      _alarms.addAll(jsonList.map((e) => AlarmModel.fromJson(e as Map<String, dynamic>)));
+    }
+  }
 
   AlarmBloc() : super(const AlarmState()) {
     on<LoadAlarmsEvent>(_onLoadAlarms);
@@ -106,11 +143,12 @@ class AlarmBloc extends Bloc<AlarmEvent, AlarmState> {
     on<ToggleAlarmEvent>(_onToggleAlarm);
   }
 
-  void _onLoadAlarms(
+  Future<void> _onLoadAlarms(
     LoadAlarmsEvent event,
     Emitter<AlarmState> emit,
-  ) {
-    emit(state.copyWith(alarms: _alarms));
+  ) async {
+    await _loadAlarms();
+    emit(state.copyWith(alarms: List.from(_alarms)));
   }
 
   void _onAddAlarm(
@@ -126,8 +164,9 @@ class AlarmBloc extends Bloc<AlarmEvent, AlarmState> {
       enabled: true,
     );
 
-    _alarms.add(newAlarm);
-    emit(state.copyWith(alarms: List.from(_alarms)));
+  _alarms.add(newAlarm);
+  _saveAlarms();
+  emit(state.copyWith(alarms: List.from(_alarms)));
   }
 
   void _onUpdateAlarm(
@@ -137,6 +176,7 @@ class AlarmBloc extends Bloc<AlarmEvent, AlarmState> {
     final index = _alarms.indexWhere((alarm) => alarm.id == event.alarm.id);
     if (index != -1) {
       _alarms[index] = event.alarm;
+      _saveAlarms();
       emit(state.copyWith(alarms: List.from(_alarms)));
     }
   }
@@ -145,8 +185,9 @@ class AlarmBloc extends Bloc<AlarmEvent, AlarmState> {
     DeleteAlarmEvent event,
     Emitter<AlarmState> emit,
   ) {
-    _alarms.removeWhere((alarm) => alarm.id == event.alarmId);
-    emit(state.copyWith(alarms: List.from(_alarms)));
+  _alarms.removeWhere((alarm) => alarm.id == event.alarmId);
+  _saveAlarms();
+  emit(state.copyWith(alarms: List.from(_alarms)));
   }
 
   void _onToggleAlarm(
@@ -156,6 +197,7 @@ class AlarmBloc extends Bloc<AlarmEvent, AlarmState> {
     final index = _alarms.indexWhere((alarm) => alarm.id == event.alarmId);
     if (index != -1) {
       _alarms[index] = _alarms[index].copyWith(enabled: !_alarms[index].enabled);
+      _saveAlarms();
       emit(state.copyWith(alarms: List.from(_alarms)));
     }
   }

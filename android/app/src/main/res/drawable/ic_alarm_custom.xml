@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96">
+    <!-- Круглый циферблат -->
+    <path
+        android:pathData="M48,16a32,32 0 1,1 0,64a32,32 0 1,1 0,-64"
+        android:strokeColor="#7C3AED"
+        android:strokeWidth="4"
+        android:fillColor="@android:color/transparent"/>
+    <!-- Левая дуга-бубенец -->
+    <path
+        android:pathData="M24,24a16,16 0 0,1 8,-12"
+        android:strokeColor="#7C3AED"
+        android:strokeWidth="4"
+        android:fillColor="@android:color/transparent"/>
+    <!-- Правая дуга-бубенец -->
+    <path
+        android:pathData="M72,24a16,16 0 0,0 -8,-12"
+        android:strokeColor="#7C3AED"
+        android:strokeWidth="4"
+        android:fillColor="@android:color/transparent"/>
+    <!-- Стрелка на 10 часов -->
+    <path
+        android:pathData="M48,48L36,36"
+        android:strokeColor="#7C3AED"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent"/>
+    <!-- Стрелка на 2 часа -->
+    <path
+        android:pathData="M48,48L60,32"
+        android:strokeColor="#7C3AED"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent"/>
+</vector>

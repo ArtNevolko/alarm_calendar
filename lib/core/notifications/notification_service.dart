@@ -95,6 +95,7 @@ class NotificationService {
       platformChannelSpecifics,
       androidScheduleMode: AndroidScheduleMode.exact,
       matchDateTimeComponents: DateTimeComponents.time,
+      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
     );
   }
 

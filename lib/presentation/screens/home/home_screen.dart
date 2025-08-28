@@ -5,6 +5,7 @@ import '../../bloc/alarm/alarm_bloc.dart';
 import '../../../bloc/premium/premium_bloc.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../premium/premium_screen.dart';
+import '../timer_screen.dart';
 import 'package:alarm_calendar/presentation/screens/create_alarm/create_alarm_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -176,7 +177,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () => _showSnackBar(l.timerInDevelopment),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const TimerScreen(),
+                            ),
+                          );
+                        },
                         icon: const Icon(Icons.timer),
                         label: Text(l.timer),
                         style: OutlinedButton.styleFrom(

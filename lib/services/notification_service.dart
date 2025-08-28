@@ -1,3 +1,4 @@
+import '../core/android_alarm_manager.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,9 +7,64 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import '../core/audio/audio_player_service.dart';
+import 'timer_sound_service.dart';
 import '../presentation/screens/alarm_ring/alarm_ring_dialog.dart';
 
 class NotificationService {
+  Future<void> scheduleTimerNotification(DateTime scheduled) async {
+    await _plugin.zonedSchedule(
+      9999,
+      'Таймер',
+      'Время вышло!',
+      tz.TZDateTime.from(scheduled, tz.local),
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'alarm_channel',
+          'Будильники',
+          channelDescription: 'Уведомления будильников',
+          importance: Importance.max,
+          priority: Priority.high,
+          playSound: true,
+        ),
+        iOS: DarwinNotificationDetails(),
+      ),
+      androidAllowWhileIdle: true,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: null,
+    );
+  }
+
+  Future<void> cancelTimerNotification() async {
+    await _plugin.cancel(9999);
+  }
+  Future<void> showTimerNotification() async {
+    await _plugin.show(
+      9999,
+      'Таймер',
+      'Время вышло!',
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          'alarm_channel',
+          'Будильники',
+          channelDescription: 'Уведомления будильников',
+          importance: Importance.max,
+          priority: Priority.high,
+          playSound: true,
+          actions: <AndroidNotificationAction>[
+            AndroidNotificationAction(
+              'STOP_TIMER_SOUND',
+              'Остановить',
+              showsUserInterface: true,
+              cancelNotification: true,
+            ),
+          ],
+        ),
+        iOS: const DarwinNotificationDetails(),
+      ),
+      payload: 'timer',
+    );
+  }
   NotificationService._internal();
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
@@ -31,10 +87,15 @@ class NotificationService {
 
     await _plugin.initialize(
       initSettings,
-      onDidReceiveNotificationResponse: (resp) {
+      onDidReceiveNotificationResponse: (resp) async {
         final payload = resp.payload;
         debugPrint('[NotificationService] Click payload: $payload');
-        if (payload != null) _handleAlarmPayload(payload);
+        if (resp.actionId == 'STOP_TIMER_SOUND') {
+          // Остановить звук таймера
+          await TimerSoundService().stop();
+        } else if (payload != null) {
+          _handleAlarmPayload(payload);
+        }
       },
       onDidReceiveBackgroundNotificationResponse: _notificationTapBackground,
     );
@@ -117,7 +178,8 @@ class NotificationService {
     if (Platform.isAndroid) {
       const platform = MethodChannel('alarm_calendar/fullscreen');
       platform.invokeMethod('showAlarm', {
-        'label': alarmId, // или передавайте label, если есть
+        'alarmId': alarmId,
+        'ringtoneId': ringtoneId,
       });
     } else {
       showAlarmPopup(alarmId: alarmId, ringtoneId: ringtoneId);
@@ -163,34 +225,41 @@ class NotificationService {
     await init();
     final adjusted = _adjustToFuture(dateTime);
     final target = tz.TZDateTime.from(adjusted, tz.local);
-
     final id = _stableId(alarmId);
     debugPrint('[NotificationService] Schedule: alarmId=$alarmId notifId=$id target=$target now=${DateTime.now()}');
-
-    final androidDetails = AndroidNotificationDetails(
-      'alarm_channel',
-      'Будильники',
-      channelDescription: 'Уведомления будильников',
-      importance: Importance.max,
-      priority: Priority.high,
-      playSound: true,
-      sound: const RawResourceAndroidNotificationSound('alarm_classic'),
-      category: AndroidNotificationCategory.alarm,
-      visibility: NotificationVisibility.public,
-      enableVibration: true,
-      fullScreenIntent: true,
-    );
-    const iosDetails = DarwinNotificationDetails(presentSound: true);
-
-    await _plugin.zonedSchedule(
-      id,
-      title,
-      body ?? 'Срабатывание будильника',
-      target,
-      NotificationDetails(android: androidDetails, iOS: iosDetails),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      payload: ringtoneId != null ? '$alarmId|$ringtoneId' : alarmId,
-    );
+    if (Platform.isAndroid) {
+      await AndroidAlarmManager.scheduleAlarm(
+        id: id,
+        dateTime: target,
+        alarmId: alarmId,
+        ringtoneId: ringtoneId,
+      );
+    } else {
+      final androidDetails = AndroidNotificationDetails(
+        'alarm_channel',
+        'Будильники',
+        channelDescription: 'Уведомления будильников',
+        importance: Importance.max,
+        priority: Priority.high,
+        playSound: true,
+        sound: const RawResourceAndroidNotificationSound('alarm_classic'),
+        category: AndroidNotificationCategory.alarm,
+        visibility: NotificationVisibility.public,
+        enableVibration: true,
+        fullScreenIntent: true,
+      );
+      const iosDetails = DarwinNotificationDetails(presentSound: true);
+      await _plugin.zonedSchedule(
+        id,
+        title,
+        body ?? 'Срабатывание будильника',
+        target,
+        NotificationDetails(android: androidDetails, iOS: iosDetails),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        payload: ringtoneId != null ? '$alarmId|$ringtoneId' : alarmId,
+        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      );
+    }
   }
 
   Future<void> scheduleTestInSeconds(int seconds, {String ringtoneId = 'default'}) async {

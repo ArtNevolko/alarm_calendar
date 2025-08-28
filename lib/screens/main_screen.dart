@@ -4,6 +4,7 @@ import '../services/alarm_service.dart';
 import '../utils/alarm_utils.dart';
 import 'edit_alarm_screen.dart';
 import 'settings_screen.dart';
+import '../presentation/screens/timer_screen.dart';
 import '../widgets/alarm_time_widget.dart';
 
 class MainScreen extends StatefulWidget {
@@ -35,6 +36,16 @@ class MainScreenState extends State<MainScreen> {
       appBar: AppBar(
         title: const Text('Будильники'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.timer),
+            tooltip: 'Таймер',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const TimerScreen()),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () {
