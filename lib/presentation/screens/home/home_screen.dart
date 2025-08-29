@@ -6,6 +6,7 @@ import '../../../bloc/premium/premium_bloc.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../premium/premium_screen.dart';
 import '../timer_screen.dart';
+import '../../../screens/settings_screen.dart';
 import 'package:alarm_calendar/presentation/screens/create_alarm/create_alarm_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -109,13 +110,15 @@ class _HomeScreenState extends State<HomeScreen> {
               );
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.language),
-            onPressed: _showLanguageBottomSheet,
-          ),
+          // Переключение языка перенесено в настройки
           IconButton(
             icon: const Icon(Icons.settings),
-            onPressed: () => _showSnackBar(l.settings),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+              );
+            },
           ),
         ],
       ),
@@ -290,73 +293,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _showLanguageBottomSheet() {
-    final l = AppLocalizations.of(context);
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              l.languageSelection,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 20),
-            ListTile(
-              leading: Text(AppLanguage.russian.flagEmoji),
-              title: Text(AppLanguage.russian.languageName),
-              trailing: context.read<LocalizationBloc>().state.language ==
-                      AppLanguage.russian
-                  ? const Icon(Icons.check, color: Color(0xFF8B5CF6))
-                  : null,
-              onTap: () {
-                context
-                    .read<LocalizationBloc>()
-                    .add(ChangeLanguageEvent(AppLanguage.russian));
-                Navigator.pop(context);
-                _showSnackBar('Язык изменен на Русский');
-              },
-            ),
-            ListTile(
-              leading: Text(AppLanguage.english.flagEmoji),
-              title: Text(AppLanguage.english.languageName),
-              trailing: context.read<LocalizationBloc>().state.language ==
-                      AppLanguage.english
-                  ? const Icon(Icons.check, color: Color(0xFF8B5CF6))
-                  : null,
-              onTap: () {
-                context
-                    .read<LocalizationBloc>()
-                    .add(ChangeLanguageEvent(AppLanguage.english));
-                Navigator.pop(context);
-                _showSnackBar('Language changed to English');
-              },
-            ),
-            ListTile(
-              leading: Text(AppLanguage.ukrainian.flagEmoji),
-              title: Text(AppLanguage.ukrainian.languageName),
-              trailing: context.read<LocalizationBloc>().state.language ==
-                      AppLanguage.ukrainian
-                  ? const Icon(Icons.check, color: Color(0xFF8B5CF6))
-                  : null,
-              onTap: () {
-                context
-                    .read<LocalizationBloc>()
-                    .add(ChangeLanguageEvent(AppLanguage.ukrainian));
-                Navigator.pop(context);
-                _showSnackBar('Мову змінено на Українську');
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   void _showDeleteDialog(String alarmId) {
     final l = AppLocalizations.of(context);
